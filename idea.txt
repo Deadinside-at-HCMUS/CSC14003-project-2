@@ -1,0 +1,34 @@
+Tạo CNF cho ma trận bom input
+Ghi chú trong đây tôi ghi clause [1,2] nghĩa là 1 OR 2 đấy
+1. Luật 1: Ô chứa clue thì tất nhiên éo thể là bom
+2. Luật 2: Nếu clue = số ô xung quanh  => nhận luôn các ô là bom
+Lấy vidu như ma trận:
+3 0 0
+0 0 0
+0 0 0
+Ta đánh số từng phần tử từ số 1 đến ... n*n
+ở đây ta có ô số 1 có manh mối(clue) là 3 => ô 1 éo thể là bom vì là ô mannh mối
+=> Bỏ clause phủ định ô 1 là bom vào CNF: [-1]
+Xung quanh có tổng cộng 3 quả bom, mà xung quanh ô 1 cũng chỉ có 3 ô là 2,5 và 6
+=> cả 3 ô 2,5,6 đều là bom
+bỏ 3 clause này vào dãy CNF: [2],[5],[6]
+
+3. Luật 3: Nếu số bom trên ô manh mối bé hơn số ô xung quanh thì sao?
+Vidu:
+0 0 0
+0 1 0
+0 0 0
+Ở đây ô 5 là ô manh mối chứa clue là 1 => 8 ô xung quanh đều có khả năng mang bom
+Bước 1: Khẳng định khả năng chứa bom trong 8 ô xung quanh bằng clause:
+[1,2,3,4,6,7,8,9]: nghĩa là ô 1,2,3,4,6,7,8,9 OR nhau thì là TRUE
+Bước 2: Khẳng định số lượng bom trong khu vực 8 ô chỉ tối đa là 1 quả bom
+Bằng cách mapping giao hợp phủ định 2(clue+1) ô lại với nhau để tạo thành clause
+[-1,-2],[-1,-3],[-1,-4],[-1,-6]....[-8,-9] rồi bỏ hết vào dãy CNF
+với clue bằng 2 thì là giao hợp 3, 3,4 thì cũng thế
+
+Đặc biệt với các clue lớn hơn 1 thì cần phải tạo thêm các clause chứng minh rằng nó phải mang bom tối thiểu là k bom(k>1)
+Cũng bằng cách mapping giao hợp (a-k+1) ô lại với nhau để tạo thằng clause:
+a: là số lượng các ô xung quanh ô manh mối có thể đặt được bom?
+k: là số lượng bom clue mà ô manh mối đưa cho
+
+
