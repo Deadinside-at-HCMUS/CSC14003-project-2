@@ -81,8 +81,8 @@ def generate_cnf(assigned, unassigned):
             # So we gonna do here combinations of positive cells which every combination have (neighbors-value+1) elements (True) (True OR True OR True ...)
             pos = combinations(neighbors,len(neighbors)-value+1)
             for clause in pos:
-                clauses.append([int(variable(liter)) for liter in clause])           
-            
+                clauses.append([int(variable(liter)) for liter in clause])             
+    
     return clauses
         
 def output(mine, board, path):
@@ -94,7 +94,247 @@ def output(mine, board, path):
                 board[i][j] = 'X'   
                 
     np.savetxt(path, board, delimiter=',',fmt='%s')    
+
+def getMinezone(assigned, unassigned):
+    minezone = []
+    
+    for cell, value in assigned.items():
+        neighbors = unassigned_neighbor(cell, unassigned)
         
+        if len(neighbors) > 0:           
+            minezone.append([cell, value, neighbors])
+            
+    return minezone
+        
+        
+def InitialState(rows, cols):
+    initial_state = []
+    
+    for i in range(rows):
+        for j in range(cols):
+            initial_state.append(-int(variable((i, j))))
+                
+    return initial_state
+
+def checkState(state, cnf):
+    check = []
+    
+    for i in range(len(cnf)):
+        for j in range(len(state)):
+            if state[j] in cnf[i]:
+                check.append([True])
+                break
+            elif j + 1 == len(state) and state[j] not in cnf[i]:
+                check.append([False])
+        
+    
+    if [False] in check:
+        return False
+    
+    return True
+
+def Heuristic(state, cnf):
+    check = []
+    
+    for i in range(len(cnf)):
+        for j in range(len(state)):
+            if state[j] in cnf[i]:
+                check.append([True])
+                break
+            elif j + 1 == len(state) and state[j] not in cnf[i]:
+                check.append([False])
+    
+    heuristic = len(cnf)
+                
+    for i in range(len(check)):
+        if check[i] == [True]:
+            heuristic = heuristic - 1
+
+    return heuristic    
+
+def ChildState(state, minezone, cell_parent):
+    
+    if cell_parent == 0:
+        cell, mines, locations = minezone[0]
+    else:
+        for i in range(len(minezone)):
+            cell, mines, locations = minezone[i]
+            
+            if cell == cell_parent:
+                if i < len(minezone) - 1:
+                    cell, mines, locations = minezone[i + 1]
+                    break
+                else:
+                    return None
+    
+    locations_var = []
+    
+    for i in range(len(locations)):
+        locations_var.append(int(variable(locations[i])))
+    
+    children = combinations(locations_var, mines)
+    
+    children_state = []
+    
+    for child in children:
+        child_state = state.copy()
+        
+        for i in range(len(state)):
+            if -state[i] in child:
+                child_state[i] = -child_state[i]
+                
+        children_state.append(child_state)
+    
+    return children_state, cell, mines
+
+
+def LowestF_Score(open):
+    index = 0
+    current_state, g_current, h_current, cell_current = open[index]
+    
+    for i in range(len(open)):
+        temp_state, g_temp, h_temp, cell_temp = open[i]
+        
+        if (g_current + h_current) > (g_temp + h_temp):
+            current_state, g_current, h_current, cell_current = open[i]
+            index = i
+            
+    return current_state, g_current, h_current, cell_current, index
+         
+def checkStateInList(state, f_score, list):
+    for element in list:
+        if state in element:
+            if f_score > (element[1] + element[2]):
+                return True
+        
+    return False
+
+
+def AStar(cnf):
+    open = []
+    close = []
+    
+    initial_state = InitialState(rows, cols)
+    
+    h_start = Heuristic(initial_state, cnf)
+    
+    g_start = 0
+    
+    cell_start = 0
+    
+    open.append([initial_state, g_start, h_start, cell_start])
+    
+    while len(open) > 0:
+       
+        current_state, g_current, h_current, cell_current, index = LowestF_Score(open)   
+        
+        if checkState(current_state, clauses): 
+            return current_state
+        
+        open.pop(index)
+        
+                
+        children_states, cell, mines = ChildState(current_state, minezone, cell_current)
+
+        for child_state in children_states:
+            
+            if checkState(child_state, clauses): 
+                return child_state
+            
+            
+            g_child = g_current + mines
+            
+            h_child = Heuristic(child_state, clauses)
+            
+            f_child = g_child + h_child
+                
+            if checkStateInList(child_state, f_child, open):
+                continue
+            
+            elif checkStateInList(child_state, f_child, close):
+                continue
+            
+            else: 
+                open.append([child_state, g_child, h_child, cell])
+                
+        close.append([current_state, g_current, h_current, cell_current])
+            
+    
+def AllPossibleState(state, minezone):
+    all = []
+    
+    for minezone_i in minezone:
+        cell, mines, locations = minezone_i
+        
+        locations_var = []
+    
+        for i in range(len(locations)):
+            locations_var.append(int(variable(locations[i])))
+        
+        if len(all) == 0:
+            children = combinations(locations_var, mines)
+            for child in children:
+                child_state = state.copy()
+                
+                for i in range(len(state)):
+                    if -state[i] in child:
+                        child_state[i] = -child_state[i]
+                        
+                all.append(child_state)
+        
+        else:
+            all_temp = all.copy()
+            
+            all.clear()
+            
+            for state_temp in all_temp:
+                
+                children = combinations(locations_var, mines)
+                
+                for child in children:
+                    child_state = state_temp.copy()
+                    
+                    for i in range(len(state)):
+                        if -state_temp[i] in child:
+                            child_state[i] = -child_state[i]
+                            
+                    all.append(child_state)
+                  
+            all_temp.clear()
+       
+    return all
+        
+    
+def BruteForce(cnf):
+    initial_state = InitialState(rows, cols)
+    
+    allstate = AllPossibleState(initial_state, minezone)
+    
+    for state in allstate:
+        if checkState(state, cnf):
+            return state
+        
+    return None
+
+def Backtracking(state, cnf, cell_parent):
+    if checkState(state, cnf):
+        return state
+    
+    children = ChildState(state, minezone, cell_parent) 
+    
+    if children != None:
+    
+        childstates, cell, mines = children
+        
+        for child in childstates:
+            result = Backtracking(child, cnf, cell)
+            
+            if result != None:
+                return result
+        
+        
+    return None
+    
 
 assigned = {}
 unassigned = set()
@@ -102,23 +342,43 @@ unassigned = set()
 board, rows, cols = getBoard('input.csv', assigned, unassigned)
 
 clauses = generate_cnf(assigned, unassigned)
-print(clauses)
+# print(clauses)
+
+minezone = getMinezone(assigned, unassigned)
 
 mine = []
 
-cnf = CNF(from_clauses=clauses)
-with Solver(bootstrap_with=cnf) as solver:
-    satisfy = solver.solve()
-    
-    solution = solver.get_model()
-    
-    print(solver.get_model())
-    
-    if solution != None:
-        for i in solution:
-            if i > 0:
-                mine.append(i)
+print("1. Pysat\n2. A*\n3. Brute Force\n4. Backtracking")
 
+choice = int(input("Choose an option: "))
+
+if choice == 1:
+    cnf = CNF(from_clauses=clauses)
+    with Solver(bootstrap_with=cnf) as solver:
+        satisfy = solver.solve()
+        
+        solution = solver.get_model()
+        
+        # print(solver.get_model())
+                    
+elif choice == 2:
+    solution = AStar(clauses)
+                    
+elif choice == 3:
+    solution = BruteForce(clauses)
+                    
+elif choice == 4:
+    state = InitialState(rows, cols)
+    solution = Backtracking(state, clauses, 0)
+    
+if solution != None:
+    print("SOLVED!")
+    for i in solution:
+        if i > 0:
+            mine.append(i)
+            
+else:
+    print("CAN NOT SOLVED!")
 
 # print(mine)
 
