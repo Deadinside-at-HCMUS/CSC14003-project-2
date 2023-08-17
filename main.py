@@ -2,8 +2,6 @@ import numpy as np
 from itertools import combinations
 from pysat.formula import CNF
 from pysat.solvers import Solver
-# import brute_force
-# import AStar
 
 # Get the cell's numerical order (from left to right, top to bottom) from its location
 def variable(cell):
@@ -176,6 +174,16 @@ def ChildState(state, minezone, cell_parent):
     
     children_state = []
     
+    flag = False
+    
+    check = 0
+    for cellstate in state:
+        if cellstate > 0 and abs(cellstate) in locations_var:
+            check = check + 1
+    
+    if check == mines:
+        flag = True
+    
     for child in children:
         child_state = state.copy()
         
@@ -185,7 +193,7 @@ def ChildState(state, minezone, cell_parent):
                 
         children_state.append(child_state)
     
-    return children_state, cell, mines
+    return children_state, cell, mines, flag
 
 
 def LowestF_Score(open):
@@ -232,30 +240,38 @@ def AStar(cnf):
             return current_state
         
         open.pop(index)
-        
                 
-        children_states, cell, mines = ChildState(current_state, minezone, cell_current)
+        children_states_comb = ChildState(current_state, minezone, cell_current)        
+        
+        if children_states_comb == None:
+            continue        
+        
+        children_states, cell, mines, flag = children_states_comb
+        
+        if flag == True:
+            open.append([current_state, g_current, h_current, cell])
+            close.append([current_state, g_current, h_current, cell_current])
+            continue
 
-        for child_state in children_states:
+        for index in range(len(children_states)):
             
-            if checkState(child_state, clauses): 
-                return child_state
-            
+            if checkState(children_states[index], clauses): 
+                return children_states[index]
             
             g_child = g_current + mines
             
-            h_child = Heuristic(child_state, clauses)
+            h_child = Heuristic(children_states[index], clauses)
             
             f_child = g_child + h_child
                 
-            if checkStateInList(child_state, f_child, open):
+            if checkStateInList(children_states[index], f_child, open):
                 continue
             
-            elif checkStateInList(child_state, f_child, close):
+            elif checkStateInList(children_states[index], f_child, close):
                 continue
             
             else: 
-                open.append([child_state, g_child, h_child, cell])
+                open.append([children_states[index], g_child, h_child, cell])
                 
         close.append([current_state, g_current, h_current, cell_current])
             
@@ -324,7 +340,7 @@ def Backtracking(state, cnf, cell_parent):
     
     if children != None:
     
-        childstates, cell, mines = children
+        childstates, cell, mines, flag = children
         
         for child in childstates:
             result = Backtracking(child, cnf, cell)
@@ -339,7 +355,7 @@ def Backtracking(state, cnf, cell_parent):
 assigned = {}
 unassigned = set()
 
-board, rows, cols = getBoard('input.csv', assigned, unassigned)
+board, rows, cols = getBoard('7x7.csv', assigned, unassigned)
 
 clauses = generate_cnf(assigned, unassigned)
 # print(clauses)
