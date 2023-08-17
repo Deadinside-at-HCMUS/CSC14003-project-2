@@ -2,6 +2,7 @@ import numpy as np
 from itertools import combinations
 from pysat.formula import CNF
 from pysat.solvers import Solver
+import time
 
 # Get the cell's numerical order (from left to right, top to bottom) from its location
 def variable(cell):
@@ -350,7 +351,13 @@ def Backtracking(state, cnf, cell_parent):
         
         
     return None
+   
     
+print("1. Pysat\n2. A*\n3. Brute Force\n4. Backtracking")
+
+choice = int(input("Choose an option: "))
+
+start_time = time.time()
 
 assigned = {}
 unassigned = set()
@@ -363,10 +370,6 @@ clauses = generate_cnf(assigned, unassigned)
 minezone = getMinezone(assigned, unassigned)
 
 mine = []
-
-print("1. Pysat\n2. A*\n3. Brute Force\n4. Backtracking")
-
-choice = int(input("Choose an option: "))
 
 if choice == 1:
     cnf = CNF(from_clauses=clauses)
@@ -399,3 +402,5 @@ else:
 # print(mine)
 
 output(mine, board, 'output.csv')
+
+print("\nTime used = ",(time.time()-start_time)*1000)
