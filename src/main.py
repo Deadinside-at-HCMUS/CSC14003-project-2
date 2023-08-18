@@ -28,12 +28,12 @@ if __name__ == '__main__':
 
     choice = int(input("Choose an option: "))
 
+    input_file = menu_choice()
+
     start_time = time.time()
 
     assigned = {}
     unassigned = set()
-
-    input_file = menu_choice()
 
     board, rows, cols = file_utils.load_board(input_file, assigned, unassigned)
 
@@ -68,4 +68,4 @@ if __name__ == '__main__':
     output_file = input_file.replace('input', 'output')
     file_utils.save_board(mine, board, output_file)
 
-    print("\nTime consumption =", (time.time()-start_time)*1000)
+    print(f"\nTime consumption: {(time.time()-start_time)*1000}ms")
