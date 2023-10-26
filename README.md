@@ -1,4 +1,3 @@
-# CSC14003_Artificial_Intellignece_P2_MineSweeper
 # Project Information
 
 This is our first project in this AI course :> <br>
